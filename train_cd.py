@@ -30,7 +30,6 @@ from utils import get_network, get_training_dataloader, get_test_dataloader, War
 
 @torch.no_grad()
 def _infer_num_classes(model, device='cuda' if torch.cuda.is_available() else 'cpu'):
-    """네트워크 출력 차원으로 클래스 수 추론."""
     model.eval()
     x = torch.zeros(1, 3, 32, 32, device=device)
     out = model(x)
@@ -61,7 +60,6 @@ def _confkd_mode(epoch, segments):
 
 @torch.no_grad()
 def _compute_confusion_prob(model, loader, K, device):
-    """테스트로더로 conf matrix를 만들고 행 정규화 확률로 변환."""
     model.eval()
     conf_mat = torch.zeros((K, K), device=device, dtype=torch.float32)
     for inputs, labels in loader:
@@ -79,7 +77,6 @@ def _compute_confusion_prob(model, loader, K, device):
 def train(epoch):
     start = time.time()
     net.train()
-    # confusion distillation 사용 여부
     if use_confkd:
         use_confusion = _confkd_mode(epoch, args.transition_epoch)
     else:
@@ -95,7 +92,6 @@ def train(epoch):
         outputs = net(images)
 
         if not use_confusion:
-            # 초기 하드 타겟 학습
             loss = loss_function(outputs, labels)
         else:
             # === Confusion-EMA Distillation ===
@@ -220,10 +216,8 @@ if __name__ == '__main__':
 
     net = get_network(args)
 
-    # === Confusion Distillation State ===
     device_str = 'cuda' if args.gpu else 'cpu'
-    # K = _infer_num_classes(net, device=device_str)  # 클래스 수 추론
-    K = 100  # CIFAR-100용으로 고정
+    K = 100
     prev_conf_prob = None
     use_confkd = args.confkd
 
@@ -339,3 +333,4 @@ if __name__ == '__main__':
             torch.save(net.state_dict(), weights_path)
 
     writer.close()
+
